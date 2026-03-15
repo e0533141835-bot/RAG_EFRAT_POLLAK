@@ -1,0 +1,642 @@
+{
+    "generated_at": "2026-03-10",
+    "total_items": 106,
+    "items": [
+        {
+            "category": "decision",
+            "title": "Multi-Tenant Support",
+            "summary": "The schema is designed to support multi-tenant functionality. Each significant business entity includes a `tenant_id` (or derived from `project_id`) to enforce data isolation.",
+            "source_file": "db_schema.md"
+        },
+        {
+            "category": "decision",
+            "title": "Foreign Key Constraints",
+            "summary": "Foreign keys (FK) are mandatory to maintain data consistency. Indexes are added based on actual query patterns (Board, Timeline, Search).",
+            "source_file": "db_schema.md"
+        },
+        {
+            "category": "decision",
+            "title": "Soft Deletions",
+            "summary": "Soft deletes are implemented only where there is business value for recovery (e.g., Projects). Otherwise, hard deletion with an audit event is used.",
+            "source_file": "db_schema.md"
+        },
+        {
+            "category": "rule",
+            "title": "User Table Structure",
+            "summary": "The `users` table includes columns such as `id`, `tenant_id`, `email`, `name`, `avatar_url`, `role`, `status`, `last_login_at`, and `password_hash`. Recent changes include adding `status` for invited users and `last_login_at` for usage analysis.",
+            "source_file": "db_schema.md"
+        },
+        {
+            "category": "rule",
+            "title": "User Table Indexes",
+            "summary": "Recommended indexes for the `users` table include a unique index on `(tenant_id, email)` and an index on `(tenant_id, status)` for management queries.",
+            "source_file": "db_schema.md"
+        },
+        {
+            "category": "rule",
+            "title": "Project Table Structure",
+            "summary": "The `projects` table includes columns like `id`, `tenant_id`, `name`, `description`, `visibility`, `archived_at`, and `created_by`. Recent changes include replacing `is_archived` with `archived_at` and `is_public` with `visibility`.",
+            "source_file": "db_schema.md"
+        },
+        {
+            "category": "rule",
+            "title": "Project Table Indexes",
+            "summary": "Indexes for the `projects` table include `(tenant_id, archived_at)` for active/archived project screens.",
+            "source_file": "db_schema.md"
+        },
+        {
+            "category": "rule",
+            "title": "Task Table Structure",
+            "summary": "The `tasks` table includes columns such as `id`, `tenant_id`, `project_id`, `title`, `description`, `status`, `priority`, `assignee_id`, `reporter_id`, `due_date`, `start_at`, `completed_at`, `position`, `labels`, and `custom_fields`. Recent changes include adding `position` for drag & drop, `custom_fields` for dynamic fields, and removing `priority_text`.",
+            "source_file": "db_schema.md"
+        },
+        {
+            "category": "rule",
+            "title": "Task Table Indexes",
+            "summary": "Critical indexes for the `tasks` table include `(project_id, status, updated_at desc)` for the Board screen, `(tenant_id, due_date)` for reminders and nearby search, and GIN indexes on `labels` and `custom_fields` for dynamic filtering.",
+            "source_file": "db_schema.md"
+        },
+        {
+            "category": "rule",
+            "title": "Associated Tables",
+            "summary": "Associated tables include `project_members` for user-project roles, `task_comments` for comments and mentions, and `audit_events` for change logging.",
+            "source_file": "db_schema.md"
+        },
+        {
+            "category": "warning",
+            "title": "Query Security",
+            "summary": "It is crucial to ensure that any query by `task.id` also filters by `tenant_id` or at least `project_id` linked to the user's tenant to prevent data leakage between tenants.",
+            "source_file": "db_schema.md"
+        },
+        {
+            "category": "decision",
+            "title": "Untrusted Frontend",
+            "summary": "The frontend is considered 'לא אמין' (untrusted), and all authorization decisions are enforced on the server.",
+            "source_file": "security_notes.md"
+        },
+        {
+            "category": "decision",
+            "title": "JWT Storage and Security",
+            "summary": "Do not store JWT in localStorage as it increases XSS risks. Use HttpOnly cookies with Secure and SameSite attributes.",
+            "source_file": "security_notes.md"
+        },
+        {
+            "category": "decision",
+            "title": "JWT Token Lifespan",
+            "summary": "Set a short lifespan for access tokens (5-15 minutes) with a separate refresh token. Refresh tokens must be rotated on use.",
+            "source_file": "security_notes.md"
+        },
+        {
+            "category": "decision",
+            "title": "JWT Signature and Verification",
+            "summary": "Use 'kid' (Key ID) for key rotation. Do not rely on claims without signature verification.",
+            "source_file": "security_notes.md"
+        },
+        {
+            "category": "decision",
+            "title": "JWT Scopes and Permissions",
+            "summary": "Avoid detailed permissions within JWT to prevent locking permissions until expiration. Use JWT to identify user, tenant, and sessionId, and fetch/calculate permissions on the server.",
+            "source_file": "security_notes.md"
+        },
+        {
+            "category": "rule",
+            "title": "Rate Limit Refresh Endpoint",
+            "summary": "Implement rate limiting and device fingerprint rules for the refresh endpoint to prevent brute-force attacks on refresh tokens.",
+            "source_file": "security_notes.md"
+        },
+        {
+            "category": "rule",
+            "title": "Reuse Detection for Refresh Tokens",
+            "summary": "Consider any further use of a refresh token as suspicious if it has already been used once, and cancel all user sessions in the tenant.",
+            "source_file": "security_notes.md"
+        },
+        {
+            "category": "rule",
+            "title": "Session Binding",
+            "summary": "Bind refresh tokens to sessionId and basic device metadata (UA hash/IP range) to prevent reuse.",
+            "source_file": "security_notes.md"
+        },
+        {
+            "category": "rule",
+            "title": "Logging Sensitive Routes",
+            "summary": "Do not log full payload for /api/auth/* routes. Only log userId after verification and non-detailed error codes. For /api/admin/* routes, log a full audit log but exclude secrets (tokens, API keys). For /api/projects/:id/invite routes, ensure invitation links are unique/TTL-based and do not return user existence info.",
+            "source_file": "security_notes.md"
+        },
+        {
+            "category": "rule",
+            "title": "Logging Secrets",
+            "summary": "Do not print secrets like Authorization header, cookies, refresh tokens, or query params containing tokens in logs.",
+            "source_file": "security_notes.md"
+        },
+        {
+            "category": "rule",
+            "title": "Correlation ID for Logging",
+            "summary": "Add a correlation/trace ID to each request to facilitate event reconstruction without exposing sensitive data.",
+            "source_file": "security_notes.md"
+        },
+        {
+            "category": "rule",
+            "title": "Multi-Tenant Authorization Checks",
+            "summary": "Enforce tenant checks at query/resolver level, not just route level. Ensure all fetches by taskId include the user's tenantId/projectId.",
+            "source_file": "security_notes.md"
+        },
+        {
+            "category": "rule",
+            "title": "User Roles and Actions",
+            "summary": "Distinguish between user ownership and membership in projects. Define clear roles for actions like delete, billing, and invite.",
+            "source_file": "security_notes.md"
+        },
+        {
+            "category": "rule",
+            "title": "Mass Assignment Control",
+            "summary": "Endpoints receiving task payloads must have a whitelist of permitted update fields.",
+            "source_file": "security_notes.md"
+        },
+        {
+            "category": "rule",
+            "title": "CSRF Protection",
+            "summary": "If using cookies for auth, implement CSRF protection (SameSite + CSRF token for state-changing actions).",
+            "source_file": "security_notes.md"
+        },
+        {
+            "category": "rule",
+            "title": "Content Security Policy (CSP)",
+            "summary": "Enable Content Security Policy to reduce XSS risks.",
+            "source_file": "security_notes.md"
+        },
+        {
+            "category": "rule",
+            "title": "Webhook Security",
+            "summary": "Implement signature verification (HMAC) for incoming/outgoing webhooks, and log retries without exposing sensitive payloads.",
+            "source_file": "security_notes.md"
+        },
+        {
+            "category": "decision",
+            "title": "Multi-Tenant Architecture",
+            "summary": "The system is designed as a multi-tenant architecture, ensuring strong separation between organizations.",
+            "source_file": "spec.md"
+        },
+        {
+            "category": "decision",
+            "title": "User Interface Focus",
+            "summary": "Users primarily interact with the Board and Project Overview screens, emphasizing a fast and intuitive user experience.",
+            "source_file": "spec.md"
+        },
+        {
+            "category": "decision",
+            "title": "Audit Trail Implementation",
+            "summary": "An audit trail is necessary to track changes in status, deadlines, and assignees for tasks.",
+            "source_file": "spec.md"
+        },
+        {
+            "category": "decision",
+            "title": "Drag & Drop Functionality",
+            "summary": "The Board will feature drag & drop functionality for status and position changes, with optimistic UI and rollback capability.",
+            "source_file": "spec.md"
+        },
+        {
+            "category": "decision",
+            "title": "Search Functionality",
+            "summary": "Search will initially cover titles, descriptions, and labels, with plans for full-text search in the future.",
+            "source_file": "spec.md"
+        },
+        {
+            "category": "decision",
+            "title": "Notification System",
+            "summary": "Notifications will include mentions, assignments, and deadline reminders.",
+            "source_file": "spec.md"
+        },
+        {
+            "category": "decision",
+            "title": "Permission Roles",
+            "summary": "Permission roles will be defined at both the organization and project levels, with sensitive actions restricted to authorized users.",
+            "source_file": "spec.md"
+        },
+        {
+            "category": "decision",
+            "title": "Audit Trail Viewing",
+            "summary": "Users will be able to view the audit trail for tasks, showing changes in status, deadlines, and assignees.",
+            "source_file": "spec.md"
+        },
+        {
+            "category": "rule",
+            "title": "Latency Requirement",
+            "summary": "The system must achieve a p95 latency of less than 300ms for key read operations in average-sized projects.",
+            "source_file": "spec.md"
+        },
+        {
+            "category": "rule",
+            "title": "Availability Target",
+            "summary": "The availability target is set at 99.9%, with graceful degradation strategies in place.",
+            "source_file": "spec.md"
+        },
+        {
+            "category": "rule",
+            "title": "Observability Metrics",
+            "summary": "Each request will have a trace ID, and metrics will be collected for cache hit rate and authorization errors.",
+            "source_file": "spec.md"
+        },
+        {
+            "category": "rule",
+            "title": "Security Measures",
+            "summary": "Security measures include a safe refresh mechanism, protection for sensitive endpoints, and prevention of data leakage between tenants.",
+            "source_file": "spec.md"
+        },
+        {
+            "category": "warning",
+            "title": "Subtasks Limitation",
+            "summary": "Full support for subtasks is not included in the MVP; only \"related tasks\" are supported.",
+            "source_file": "spec.md"
+        },
+        {
+            "category": "warning",
+            "title": "Multi-Project Task Restriction",
+            "summary": "Tasks are restricted to belonging to a single project; multi-project tasks are not supported.",
+            "source_file": "spec.md"
+        },
+        {
+            "category": "warning",
+            "title": "Public Sharing Restriction",
+            "summary": "Public sharing of projects is not available in the initial stage.",
+            "source_file": "spec.md"
+        },
+        {
+            "category": "decision",
+            "title": "ארכיטקטורת יישום היברידית",
+            "summary": "המערכת תוכננה לאפשר עבודה היברידית בין רינדור שרת ורינדור לקוח, עם דגש על SEO למסכי שיווק ואינטראקטיביות באפליקציה. החלטה זו מאפשרת שילוב של אינטראקטיביות עם אופטימיזציה למנועי חיפוש.",
+            "source_file": "architecture.md"
+        },
+        {
+            "category": "decision",
+            "title": "קונסיסטנטיות בנתונים",
+            "summary": "נקבע כי פעולות קריטיות, כמו שיוך משימה לפרויקט והרשאות, יתבצעו ברמת טרנזקציה כדי לשמור על עקביות הנתונים. בנוסף, גרסאות הנתונים יישמרו.",
+            "source_file": "architecture.md"
+        },
+        {
+            "category": "decision",
+            "title": "שימוש ב-Cache למטא-נתונים",
+            "summary": "כדי להאיץ קריאות נפוצות למטא-נתונים, כגון ספירת משימות ותגיות, הוחלט להשתמש ב-Cache עם TTL קצר. כך ניתן לשפר את זמן התגובה של המערכת.",
+            "source_file": "architecture.md"
+        },
+        {
+            "category": "decision",
+            "title": "בחירת Next.js (App Router)",
+            "summary": "Next.js נבחר בשל השילוב הפרקטי שהוא מספק בין Server Components ו-Client Components. הוא מאפשר בקרת Data Fetching, Pagination ו-prefetch חכם, המתאימים למסכים הראשיים של מערכת ניהול המשימות.",
+            "source_file": "architecture.md"
+        },
+        {
+            "category": "decision",
+            "title": "תמיכה ב-RTL",
+            "summary": "נבחר ניהול `<html dir=\"rtl\">` כדי לתמוך ב-RTL באופן מלא, כולל התאמת CSS ו-layout, תוך שמירה על חוויית משתמש חלקה ללא \"קפיצות\" כיוון.",
+            "source_file": "architecture.md"
+        },
+        {
+            "category": "decision",
+            "title": "שיתוף קוד בין שרת ולקוח",
+            "summary": "טיפוסים, סכמות ולידציה יופיעו הן בשרת והן בלקוח, מה שמאפשר קוד משותף ומקל על התחזוקה.",
+            "source_file": "architecture.md"
+        },
+        {
+            "category": "decision",
+            "title": "ביצועים ותפעול",
+            "summary": "Next.js מאפשר בניית paths ידידותיים ל-edge למסכי שיווק/סטטיים, אך שומר על לוגיקה רגישה עם runtime מלא. כך ניתן לשפר את הביצועים והתפעול של המערכת.",
+            "source_file": "architecture.md"
+        },
+        {
+            "category": "decision",
+            "title": "בחירת Postgres",
+            "summary": "Postgres נבחר בשל הרילציות הברורות בין משתמשים, פרויקטים, משימות וחברות/ארגונים. הוא מספק טרנזקציות אמינות ואילוצי מפתח זר למניעת orphan records, וכן מאפשר חיפוש וסינון מתקדמים.",
+            "source_file": "architecture.md"
+        },
+        {
+            "category": "decision",
+            "title": "ניהול Audit Trail",
+            "summary": "Postgres מאפשר ניהול מסודר של Audit Trail באמצעות טבלאות events/history. ניתן גם להטמיע Row Level Security בעתיד כדי להקשיח הפרדה בין טננטים ברמת DB.",
+            "source_file": "architecture.md"
+        },
+        {
+            "category": "decision",
+            "title": "בחירת Redis",
+            "summary": "Redis משמש כשכבת האצה ותפעול, ולא כמקור אמת. הוא משמש ל-Cache לקריאות חמות, Rate limiting, Queues והתראות, ושמירת state מינימלי של Sessions/tokens.",
+            "source_file": "architecture.md"
+        },
+        {
+            "category": "rule",
+            "title": "Source of Truth",
+            "summary": "Postgres נקבע כמקור האמת (Source of Truth) עבור כל הנתונים הקריטיים. כל נתון קריטי נכתב ונאכף ב-Postgres, ו-Redis מתעדכן באמצעות invalidation/ttl ואירועים.",
+            "source_file": "architecture.md"
+        },
+        {
+            "category": "rule",
+            "title": "Cache-aside",
+            "summary": "נקבע כי תחילה יש לקרוא מ-Redis, ואם אין נתונים רלוונטיים, יש לבצע שאילתה ל-Postgres ולכתוב עם TTL קצר. כך ניתן לשמור על עדכניות הנתונים.",
+            "source_file": "architecture.md"
+        },
+        {
+            "category": "rule",
+            "title": "Idempotency",
+            "summary": "פעולות כתיבה רגישות, כגון יצירת משימה, יקבלו `idempotencyKey` כדי למנוע כפילויות במקרה של retries. כך נמנעים מצבים של כפילויות נתונים.",
+            "source_file": "architecture.md"
+        },
+        {
+            "category": "rule",
+            "title": "Observability",
+            "summary": "כל route קריטי ידווח על latency, cache hit rate ו-db query count. כך ניתן לזהות במהירות רגרסיות ולשפר את ביצועי המערכת.",
+            "source_file": "architecture.md"
+        },
+        {
+            "category": "decision",
+            "title": "שיפור ביצועים",
+            "summary": "שיפור זמן טעינת לוח משימות באמצעות cache-aside ב־Redis עבור summaries.",
+            "source_file": "changelog.md"
+        },
+        {
+            "category": "decision",
+            "title": "תיקון באג",
+            "summary": "תיקון באג במיון משימות לפי dueDate שהיה מתנהג שונה בין RTL ל־LTR.",
+            "source_file": "changelog.md"
+        },
+        {
+            "category": "decision",
+            "title": "שיפור UX",
+            "summary": "הוספת skeleton אחיד לטבלת Projects כדי להפחית קפיצות פריסה בזמן טעינה.",
+            "source_file": "changelog.md"
+        },
+        {
+            "category": "decision",
+            "title": "אבטחה",
+            "summary": "הוספת rate limiting ל־/api/auth/login ול־/api/auth/refresh כדי להפחית brute-force.",
+            "source_file": "changelog.md"
+        },
+        {
+            "category": "decision",
+            "title": "אופטימיזציה ל־DB",
+            "summary": "הוספת אינדקס מרוכב על tasks(project_id, status, updated_at) בעקבות עומס על מסך Board בפרויקטים גדולים.",
+            "source_file": "changelog.md"
+        },
+        {
+            "category": "decision",
+            "title": "תיקון באג",
+            "summary": "תיקון באג בעדכון משימה שמאפס assigneeId במקרים של patch חלקי.",
+            "source_file": "changelog.md"
+        },
+        {
+            "category": "decision",
+            "title": "שינוי ארכיטקטורה",
+            "summary": "מעבר הדרגתי מ־REST endpoints מפורטים ל־GraphQL עבור מסכי אפליקציה מרכזיים (Board/Timeline) כדי לצמצם overfetching.",
+            "source_file": "changelog.md"
+        },
+        {
+            "category": "decision",
+            "title": "ניטור",
+            "summary": "הוספת מדדים: cache_hit_rate, db_query_count, p95_latency לפי route.",
+            "source_file": "changelog.md"
+        },
+        {
+            "category": "decision",
+            "title": "תיקון באג",
+            "summary": "תיקון באג בהרשאות שיתוף פרויקט שמאפשרות גישה לקריאת task metadata גם לאחר הסרת משתמש מהפרויקט.",
+            "source_file": "changelog.md"
+        },
+        {
+            "category": "decision",
+            "title": "שיפור UI",
+            "summary": "נעילה של tokens לפלטת צבעים והקשחת focus-visible בכל רכיבי input.",
+            "source_file": "changelog.md"
+        },
+        {
+            "category": "decision",
+            "title": "טיפול ב־RTL",
+            "summary": "טיפול באייקונים כיווניים (chevrons) בתוך breadcrumb וב־pagination, כולל mirroring לפי dir.",
+            "source_file": "changelog.md"
+        },
+        {
+            "category": "decision",
+            "title": "ניקוי DB",
+            "summary": "הסרת שדה legacy tasks.priority_text לאחר מעבר מלא ל־enum tasks.priority.",
+            "source_file": "changelog.md"
+        },
+        {
+            "category": "decision",
+            "title": "תשתית",
+            "summary": "הפרדת Redis בין cache לבין queues באמצעות namespaces כדי למנוע collision במפתחות.",
+            "source_file": "changelog.md"
+        },
+        {
+            "category": "decision",
+            "title": "יציבות",
+            "summary": "הוספת idempotency ל־Create Task כדי למנוע כפילויות בעת retries מהלקוח.",
+            "source_file": "changelog.md"
+        },
+        {
+            "category": "warning",
+            "title": "Known Regression",
+            "summary": "לעתים נדירות תזכורות נשלחות פעמיים בעת deploy.",
+            "source_file": "changelog.md"
+        },
+        {
+            "category": "decision",
+            "title": "עקביות, נגישות, ונגישות",
+            "summary": "המערכת חייבת להיות עקבית, נגישה, וצפויה. רכיבים חדשים חייבים להיבנות על בסיס רכיבי הבסיס (כפתור, קלט, דיאלוג, טוסט, טבלת נתונים) וה-tokens המרכזיים. אין הוספת סגנונות נקודתיים, אלא שימוש ב-tokens או הרחבה מבוקרת של רכיבים.",
+            "source_file": "rules.md"
+        },
+        {
+            "category": "rule",
+            "title": "סקייל טיפוגרפיה מוגדר",
+            "summary": "שימוש בסולם גדלים מוגדר מראש (12/14/16/20/24/32) עבור כותרות, טקסט, והערות משתמשים. אין חריגות ללא החלטה תיעודית.",
+            "source_file": "rules.md"
+        },
+        {
+            "category": "rule",
+            "title": "מצבים אחידים",
+            "summary": "לכל רכיב חייבים להיות states ברורים: default, hover, active, focus-visible, disabled, loading, error. Focus חייב להיות גלוי ובקונטרסט מספיק.",
+            "source_file": "rules.md"
+        },
+        {
+            "category": "rule",
+            "title": "ריווח אחיד",
+            "summary": "מרווחים הם כפולות של 4px בלבד. חריגה מותרת רק לצרכי דיוק פיקסלים ברכיבי אייקון/טוגל.",
+            "source_file": "rules.md"
+        },
+        {
+            "category": "decision",
+            "title": "RTL-first",
+            "summary": "המערכת היא RTL-first, כלומר הפריסה והטקסט מוגדרים כך שברירת המחדל היא `dir=\"rtl\"`. התאמות ל-LTR (אנגלית) הן המקרה המשני.",
+            "source_file": "rules.md"
+        },
+        {
+            "category": "rule",
+            "title": "שימוש בלוגיים של CSS",
+            "summary": "שימוש ב-`margin-inline-start/end`, `padding-inline-*`, `inset-inline-*` ו-`text-align: start/end` במקום left/right. זה מונע \"שבירה\" במעבר שפה.",
+            "source_file": "rules.md"
+        },
+        {
+            "category": "rule",
+            "title": "אייקונים כיווניים",
+            "summary": "חצים, chevrons, \"קדימה/אחורה\" חייבים להתהפך בהתאם ל-dir. העדפה לאייקונים המאפשרים mirror.",
+            "source_file": "rules.md"
+        },
+        {
+            "category": "rule",
+            "title": "טבלאות ורשימות",
+            "summary": "עמודת \"פעולות\" (Actions) ממוקמת בתחילת השורה ב-RTL (בצד ימין), אלא אם הוחלט אחרת למסך ספציפי.",
+            "source_file": "rules.md"
+        },
+        {
+            "category": "rule",
+            "title": "אנימציות והחלקות",
+            "summary": "slide-in, drawers, sidebars נפתחים מצד ימין ב-RTL. אין hardcode לצד פתיחה.",
+            "source_file": "rules.md"
+        },
+        {
+            "category": "decision",
+            "title": "פלטת צבעים",
+            "summary": "פלטת צבעים ניטרלית עם צבעי סטטוס ברורים. המטרה היא קונטרסט גבוה, מראה נקי, ותמיכה ב-dark mode.",
+            "source_file": "rules.md"
+        },
+        {
+            "category": "rule",
+            "title": "Primary",
+            "summary": "כחול עמוק עבור פעולות ראשיות (Create, Save) נבדק לקונטרסט AA לפחות.",
+            "source_file": "rules.md"
+        },
+        {
+            "category": "rule",
+            "title": "Neutral",
+            "summary": "מדרג אפורים לרקעים, גבולות וטקסט משני. טקסט ראשי לעולם לא יהיה אפור בהיר.",
+            "source_file": "rules.md"
+        },
+        {
+            "category": "rule",
+            "title": "Success/Warning/Danger",
+            "summary": "ירוק/כתום/אדום לשגיאות וסטטוסים. שימוש רק בגווני הסטטוס, ללא התאמות מקומיות.",
+            "source_file": "rules.md"
+        },
+        {
+            "category": "rule",
+            "title": "Focus Ring",
+            "summary": "טבעת פוקוס בגוון Primary בהיר עם שקיפות קבועה.",
+            "source_file": "rules.md"
+        },
+        {
+            "category": "rule",
+            "title": "שימוש בצבע",
+            "summary": "סטטוס חייב לכלול גם אייקון/טקסט/label כדי שלא יהיה תלוי בצבע. רקעי סטטוס הם tint עדין, והטקסט נשאר dark/light לפי theme.",
+            "source_file": "rules.md"
+        },
+        {
+            "category": "rule",
+            "title": "דארק מוד",
+            "summary": "אין היפוך צבעים ידני. שימוש במיפוי tokens ל-dark.",
+            "source_file": "rules.md"
+        },
+        {
+            "category": "decision",
+            "title": "צפיפות נתונים",
+            "summary": "הגדרת 3 מצבי density: Comfortable (ברירת מחדל), Compact (למשתמשי power), ו-Dense (למסכי ניהול/אדמין עם אזהרה לגבי נגישות).",
+            "source_file": "rules.md"
+        },
+        {
+            "category": "rule",
+            "title": "מסכי רשימות",
+            "summary": "מסכי רשימות חייבים לשמור header דביק בעת גלילה, לספק empty state ברור עם פעולה, ולשמור על skeleton loading אחיד.",
+            "source_file": "rules.md"
+        },
+        {
+            "category": "decision",
+            "title": "מעבר הדרגתי מ־REST ל־GraphQL",
+            "summary": "מעבר הדרגתי מ־REST ל־GraphQL כדי לאפשר אגרגציה של נתונים במסכי Board/Timeline, תוך שמירה על REST עבור פעולות פשוטות. GraphQL יכסה מסכי ליבה עם סכמות ברורות.",
+            "source_file": "decisions.md"
+        },
+        {
+            "category": "rule",
+            "title": "אכיפת הרשאות ב־GraphQL",
+            "summary": "GraphQL חייב לאכוף הרשאות בכל resolver, ולא רק ב־gateway.",
+            "source_file": "decisions.md"
+        },
+        {
+            "category": "rule",
+            "title": "עדיפות ל־query ספציפי",
+            "summary": "להעדיף query שמחזיר בדיוק את השדות הדרושים, ולהימנע מ־mega query אחת.",
+            "source_file": "decisions.md"
+        },
+        {
+            "category": "rule",
+            "title": "caching מוגבל",
+            "summary": "caching ברמת response אפשרי רק עבור queries ללא מידע פר־משתמש רגיש.",
+            "source_file": "decisions.md"
+        },
+        {
+            "category": "decision",
+            "title": "State Management: Server-first + Client store מינימלי",
+            "summary": "ניהול state UI בלבד בלקוח, תוך קבלת נתונים \"אמת\" מהשרת. הגישה החדשה מפחיתה דריפט ומקלה על debugging.",
+            "source_file": "decisions.md"
+        },
+        {
+            "category": "decision",
+            "title": "Cache-aside ב־Redis עבור summaries",
+            "summary": "הוספת שכבת Redis לפריטים חמים כמו ספירות משימות, last viewed projects ו־rate limit counters.",
+            "source_file": "decisions.md"
+        },
+        {
+            "category": "rule",
+            "title": "כללים לשימוש ב־Redis",
+            "summary": "Redis אינו מקור אמת, TTL קצר, invalidation על כתיבה ומדדים על hit/miss.",
+            "source_file": "decisions.md"
+        },
+        {
+            "category": "decision",
+            "title": "Audit Events: לוג אירועים במקום \"history tables\" מרובות",
+            "summary": "יצירת טבלת `audit_events` אחידה עם `diff` ב־JSONB במקום טבלאות היסטוריה נפרדות לכל ישות. מאפשר אחידות וחיפוש/פילטרים על פעולות משתמש.",
+            "source_file": "decisions.md"
+        },
+        {
+            "category": "warning",
+            "title": "סיכון ידוע בשאילתות על diff",
+            "summary": "שאילתות על diff דורשות אינדוקס/פונקציות, לכן נשמור גם שדות \"מפתח\" כעמודות.",
+            "source_file": "decisions.md"
+        },
+        {
+            "category": "decision",
+            "title": "RTL-first כעיקרון תשתיתי",
+            "summary": "RTL נקבע כברירת מחדל כדי למנוע חוב טכני, במיוחד ברכיבי drag & drop.",
+            "source_file": "decisions.md"
+        },
+        {
+            "category": "decision",
+            "title": "פתרון לתזכורות כפולות בעת Deploy",
+            "summary": "הוספת מנגנון נעילה חזק (SET NX עם TTL) סביב job dispatch, וכן הוספת מפתח idempotency ברמת notification, כדי למנוע משלוח כפול של תזכורות.",
+            "source_file": "known_issues.md"
+        },
+        {
+            "category": "decision",
+            "title": "פתרון לבעיית N+1 בקריאות משולבות ב-GraphQL resolvers",
+            "summary": "שימוש ב-DataLoader / batching, prefetch מרוכב, וניטור db_query_count לכל query, על מנת למנוע ריבוי שאילתות.",
+            "source_file": "known_issues.md"
+        },
+        {
+            "category": "decision",
+            "title": "פתרון לבעיית קפיצות סדר ב-Drag & Drop",
+            "summary": "שימוש ב-fractional indexing ו-rebalancing, וכן הוספת optimistic concurrency control (version / updated_at check) כדי לטפל בבעיית concurrent updates.",
+            "source_file": "known_issues.md"
+        },
+        {
+            "category": "decision",
+            "title": "פתרון לבעיית הרשאות בהסרת חבר מפרויקט",
+            "summary": "בדיקת membership בכל resolver ולא הסתמכות על cache, וכן קשירת cache keys ל-membership version, על מנת למנוע גישה בלתי מורשית למשימות.",
+            "source_file": "known_issues.md"
+        },
+        {
+            "category": "rule",
+            "title": "אחידות ב-empty states",
+            "summary": "שימוש ברכיב EmptyState אחיד עם כותרת, הסבר ופעולה מומלצת, וכן בדיקת RTL על כל הווריאציות, על מנת לשפר את חוויית המשתמש.",
+            "source_file": "known_issues.md"
+        },
+        {
+            "category": "decision",
+            "title": "פתרון לאינדקסים חסרים בפילטרים דינמיים",
+            "summary": "יצירת אינדקס GIN מבוקר על keys נפוצים בלבד, וכן הגבלת queries דינמיות והצעת saved views, על מנת לשפר את מהירות הפילטרים.",
+            "source_file": "known_issues.md"
+        }
+    ]
+}
