@@ -23,45 +23,41 @@ graph TD
         K --> L[StopEvent]
         L --> M[Gradio UI Response]
     end
-🏗️ חידושים בארכיטקטורה (Workflows & Steps)
-הפרויקט שודרג מ-RAG לינארי פשוט למערכת Event-Driven מורכבת:
+```
 
-LlamaIndex Workflows: שימוש במחלקת Workflow לניהול זרימת עבודה אסינכרונית מבוססת שלבים.
+## 🏗️ חידושים בארכיטקטורה (Workflows & Steps)
+הפרויקט שודרג מ-RAG לינארי פשוט למערכת **Event-Driven** מורכבת:
+* **LlamaIndex Workflows:** שימוש במחלקת Workflow לניהול זרימת עבודה אסינכרונית מבוססת שלבים.
+* **Event-Driven Design:** העברת מידע בין שלבי השליפה לסינתזה באמצעות אירועים מותאמים אישית.
+* **Visual Workflow Tracking:** ייצור אוטומטי של קובץ rag_workflow.html המציג תרשים אינטראקטיבי.
+* **Hybrid Router:** אינטגרציה בין מנוע החיפוש ב-JSON לבין Pinecone.
 
-Event-Driven Design: העברת מידע בין שלבי השליפה לסינתזה באמצעות אירועים מותאמים אישית.
+## 🛠️ טכנולוגיות וכלים
+* **Framework:** LlamaIndex Workflows, Steps, Events
+* **LLM & Embeddings:** Cohere Command-R & Multilingual v3
+* **Vector DB:** Pinecone
+* **UI:** Gradio ChatInterface
 
-Visual Workflow Tracking: ייצור אוטומטי של קובץ rag_workflow.html המציג תרשים אינטראקטיבי.
+## 🚀 הוראות הרצה
 
-Hybrid Router: אינטגרציה בין מנוע החיפוש ב-JSON לבין Pinecone.
-
-🛠️ טכנולוגיות וכלים
-Framework: LlamaIndex Workflows, Steps, Events
-
-LLM & Embeddings: Cohere Command-R & Multilingual v3
-
-Vector DB: Pinecone
-
-UI: Gradio ChatInterface
-
-🚀 הוראות הרצה
-התקנת ספריות:
-
-Bash
+1. התקנת ספריות:
+```bash
 pip install -r requirements.txt
-הכנת נתונים:
+```
 
-Bash
+2. הכנת נתונים:
+```bash
 python ingest.py
 python extractor.py
-הרצת האפליקציה:
+```
 
-Bash
+3. הרצת האפליקציה:
+```bash
 python app.py
-הערה: עם עליית האפליקציה, ייווצר קובץ בשם rag_workflow.html בתיקייה הראשית.
+```
+*הערה: עם עליית האפליקציה, ייווצר קובץ בשם rag_workflow.html בתיקייה הראשית.*
 
-🛡️ הגנות ומניעת הזיות (Guardrails)
-Zero Hallucination Policy: הסתמכות על הקונטקסט בלבד.
-
-Legacy Handling: טיפול בשדות שהוסרו והסבר עליהם למשתמש.
-
-Source Attribution: חובת ציטוט מקורות בסוף כל תשובה.
+## 🛡️ הגנות ומניעת הזיות (Guardrails)
+* **Zero Hallucination Policy:** הסתמכות על הקונטקסט בלבד.
+* **Legacy Handling:** טיפול בשדות שהוסרו והסבר עליהם למשתמש.
+* **Source Attribution:** חובת ציטוט מקורות בסוף כל תשובה.
