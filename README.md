@@ -26,31 +26,29 @@ graph TD
 🏗️ חידושים בארכיטקטורה (Workflows & Steps)
 הפרויקט שודרג מ-RAG לינארי פשוט למערכת Event-Driven מורכבת:
 
-LlamaIndex Workflows: שימוש במחלקת Workflow לניהול זרימת עבודה אסינכרונית מבוססת @step.
+LlamaIndex Workflows: שימוש במחלקת Workflow לניהול זרימת עבודה אסינכרונית מבוססת שלבים.
 
-Event-Driven Design: העברת מידע בין שלבי השליפה (Retrieval) לשלבי הסינתזה (Synthesis) באמצעות אירועים מותאמים אישית (RetrievedDataEvent).
+Event-Driven Design: העברת מידע בין שלבי השליפה לסינתזה באמצעות אירועים מותאמים אישית.
 
-Visual Workflow Tracking: המערכת מייצרת אוטומטית קובץ rag_workflow.html המציג תרשים אינטראקטיבי של כל הצעדים בזמן אמת, בהתאם לדרישות המתקדמות של הקורס.
+Visual Workflow Tracking: ייצור אוטומטי של קובץ rag_workflow.html המציג תרשים אינטראקטיבי.
 
-Hybrid Router: אינטגרציה עמוקה בין מנוע החיפוש ב-JSON (לנתונים קשיחים) לבין Pinecone (להבנה סמנטית).
+Hybrid Router: אינטגרציה בין מנוע החיפוש ב-JSON לבין Pinecone.
 
 🛠️ טכנולוגיות וכלים
-Framework: LlamaIndex (Workflows, Steps, Events).
+Framework: LlamaIndex Workflows, Steps, Events
 
-LLM & Embeddings: Cohere (Command-R & Multilingual v3).
+LLM & Embeddings: Cohere Command-R & Multilingual v3
 
-Vector DB: Pinecone.
+Vector DB: Pinecone
 
-Visualization: Pyvis & LlamaIndex Utils (לייצור תרשים הזרימה הגרפי).
-
-UI: Gradio ChatInterface.
+UI: Gradio ChatInterface
 
 🚀 הוראות הרצה
 התקנת ספריות:
 
 Bash
 pip install -r requirements.txt
-הכנת נתונים (פעם אחת):
+הכנת נתונים:
 
 Bash
 python ingest.py
@@ -59,11 +57,11 @@ python extractor.py
 
 Bash
 python app.py
-הערה: עם עליית האפליקציה, המערכת תייצר אוטומטית קובץ בשם rag_workflow.html בתיקייה הראשית. ניתן לפתוח אותו בדפדפן כדי לצפות בתרשים הזרימה של הסוכן.
+הערה: עם עליית האפליקציה, ייווצר קובץ בשם rag_workflow.html בתיקייה הראשית.
 
 🛡️ הגנות ומניעת הזיות (Guardrails)
-Zero Hallucination Policy: הנחיית LLM מחמירה להסתמך על הקונטקסט בלבד.
+Zero Hallucination Policy: הסתמכות על הקונטקסט בלבד.
 
-Legacy Handling: זיהוי שדות שהוסרו (Legacy) והסבר עליהם למשתמש במקום מתן תשובת "לא נמצא מידע".
+Legacy Handling: טיפול בשדות שהוסרו והסבר עליהם למשתמש.
 
-Source Attribution: חובת ציטוט מקורות (source_file) בסוף כל תשובה טכנית.
+Source Attribution: חובת ציטוט מקורות בסוף כל תשובה.
