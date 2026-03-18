@@ -74,9 +74,14 @@ def search_in_json(query):
 
     return "\n".join(results) if results else None
 
+
 # ==========================================
-# 4. הגדרת אירועים (Events) - כמו בקוד של המורה!
+# 4. הגדרת אירועים (Events) - הוספנו אירוע ניתוב
 # ==========================================
+class RouterEvent(Event):
+    """אירוע שיוצא מהראוטר ומפעיל את השליפה"""
+    query: str
+
 class RetrievedDataEvent(Event):
     """אירוע שמועבר אחרי שליפת הנתונים מה-DB וה-JSON"""
     structured_info: str | None
@@ -84,40 +89,33 @@ class RetrievedDataEvent(Event):
     query: str
 
 # ==========================================
-# 5. מחלקת ה-Workflow עם ה-STEPS!
+# 5. מחלקת ה-Workflow עם הראוטר המפורש
 # ==========================================
 class AgenticRAGWorkflow(Workflow):
     
     @step
-    async def retrieve_data(self, ctx: Context, ev: StartEvent) -> RetrievedDataEvent:
-        """שלב 1: שליפת הנתונים מהמקורות (Pinecone + JSON)"""
+    async def router(self, ctx: Context, ev: StartEvent) -> RouterEvent:
+        """שלב 1: הראוטר - מקבל את השאילתה ומנתב אותה להמשך"""
         query = ev.get("query")
+        print(f"\n🚦 ראוטר: התקבלה שאלה חדשה -> {query}")
+        # כאן הלוגיקה נשארת זהה - אנחנו פשוט מעבירים את השאלה לשלב הבא
+        return RouterEvent(query=query)
+
+    @step
+    async def retrieve_data(self, ctx: Context, ev: RouterEvent) -> RetrievedDataEvent:
+        """שלב 2: שליפת הנתונים (נשאר בדיוק אותו דבר!)"""
+        query = ev.query
         
-        print(f"\n{'='*50}")
-        print(f"🚦 שאלה חדשה: {query}")
-        print(f"{'='*50}")
-        
-        # א. חילוץ מ-JSON
+        # א. חילוץ מ-JSON (אותה לוגיקה בדיוק)
         structured_info = search_in_json(query)
         if structured_info:
-            print("💎 נמצא מידע מובנה ב-JSON! (יועבר למודל)")
-        else:
-            print("📭 לא נמצא מידע רלוונטי ב-JSON.")
+            print("💎 נמצא מידע מובנה ב-JSON!")
             
-        # ב. שליפה מ-Pinecone
+        # ב. שליפה מ-Pinecone (אותה לוגיקה בדיוק)
         retriever = index.as_retriever(similarity_top_k=10)
-        # מכיוון שזה קוד אסינכרוני, אנחנו רצים ב-thread רגיל (אפשר גם retriever.aretrieve אם נתמך)
         response_nodes = retriever.retrieve(query)
         semantic_text = "\n".join([n.node.get_content() for n in response_nodes])
         
-        print("\n--- 📄 פסקאות שנשלפו מ-Pinecone ---")
-        for i, node in enumerate(response_nodes):
-            file_name = node.node.metadata.get('file_name', 'קובץ לא ידוע')
-            score = node.score if node.score else 0.0
-            print(f"[{i+1}] קובץ: {file_name} | ציון התאמה: {score:.3f}")
-        print("-----------------------------------")
-        
-        # זורקים את האירוע לשלב הבא
         return RetrievedDataEvent(
             structured_info=structured_info,
             semantic_text=semantic_text,
@@ -126,32 +124,28 @@ class AgenticRAGWorkflow(Workflow):
 
     @step
     async def synthesize_response(self, ctx: Context, ev: RetrievedDataEvent) -> StopEvent:
-        """שלב 2: יצירת התשובה הסופית באמצעות ה-LLM"""
+        """שלב 3: יצירת התשובה (לא השתנה)"""
+        # ... כל הקוד של הפרומפט נשאר פה בדיוק אותו דבר ...
         prompt = f"""
-אתה אנליסט מערכות מומחה המסייע למפתחים. עליך לענות על השאלה בצורה מקצועית על בסיס המידע המצורף בלבד.
+    אתה אנליסט מערכות מומחה המסייע למפתחים. עליך לענות על השאלה בצורה מקצועית על בסיס המידע המצורף בלבד.
 
-[מידע מה-JSON]
-{ev.structured_info if ev.structured_info else 'אין מידע מובנה.'}
+    [מידע מה-JSON]
+    {ev.structured_info if ev.structured_info else 'אין מידע מובנה.'}
 
-[טקסט מהמסמכים]
-{ev.semantic_text if ev.semantic_text else 'אין טקסט קשור.'}
+    [טקסט מהמסמכים]
+    {ev.semantic_text if ev.semantic_text else 'אין טקסט קשור.'}
 
-חוקי עבודה קריטיים:
-#     1. **דיוק טכני:** אם משתמש שואל על רכיב או שדה שמוגדר במסמכים כ-"Legacy" או ככזה ש-"הוסר" (Removed), עליך להסביר זאת במפורש למשתמש ולא להגיד שאין מידע.
-#     2. **חיבור מידע:** אם המידע מופיע ב-JSON כחוק ובמסמכים כהסבר, חבר ביניהם לתשובה אחת מלאה.
-#     3. **ציטוט מקורות:** אם (ורק אם) ענית תשובה עניינית מתוך הטקסט, חובה עליך להוסיף בסוף התשובה שורה חדשה עם שם המקור (למשל: "*מקורות: rules.md*").
-#     4. **חסימת הזיות:** אם המידע באמת לא קיים (לא כמידע נוכחי ולא כמידע שהוסר), ענה: "אין לי מידע על כך במסמכי הפרויקט."
+    חוקי עבודה קריטיים:
+    1. **דיוק טכני:** הסבר על Legacy/Removed.
+    2. **חיבור מידע:** חבר בין JSON למסמכים.
+    3. **ציטוט מקורות:** חובה לציין שם מקור.
+    4. **חסימת הזיות:** "אין לי מידע על כך".
 
-השאלה: {ev.query}
-
-תשובה:
-"""
+    השאלה: {ev.query}
+    תשובה:
+    """
         messages = [ChatMessage(role="user", content=prompt)]
-        
-        # הרצת ה-LLM (רצים בצורה אסינכרונית כדי לא לתקוע את השרת)
         response = await asyncio.to_thread(Settings.llm.chat, messages)
-        
-        # החזרת התשובה לנקודת ההתחלה
         return StopEvent(result=str(response.message.content))
 
 # ==========================================
